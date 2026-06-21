@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Body Siege: Cancer Evolution</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <main class="game-panel stage-shell">
+        <section class="body-board" aria-label="Body colonization map">
+          <canvas id="bodyCanvas"></canvas>
+          <div id="bubbleLayer" class="bubble-layer" aria-label="Clickable biology popups"></div>
+        </section>
+
+        <header class="top-bar" aria-label="Game title">
+          <h1>Body Siege</h1>
+        </header>
+
+        <section class="stat-grid hud-card" aria-label="Run status">
+          <div>
+            <span class="metric-label">Generation</span>
+            <strong id="generation">0</strong>
+          </div>
+          <div>
+            <span class="metric-label">Evolution pts</span>
+            <strong id="evoPoints">0</strong>
+          </div>
+          <div>
+            <span class="metric-label">Body</span>
+            <strong id="bodyColonized">0%</strong>
+          </div>
+          <div>
+            <span class="metric-label">Detection</span>
+            <strong id="detection">0%</strong>
+          </div>
+        </section>
+
+        <section class="selected-panel hud-card" aria-label="Selected organ">
+          <div class="section-title-row">
+            <h2 id="selectedName">Primary colon</h2>
+            <span id="selectedBurden" class="pill">3%</span>
+          </div>
+          <div id="selectedDetails" class="selected-details"></div>
+        </section>
+
+        <nav class="hud-actions" aria-label="Game screens">
+          <button class="nav-button" type="button" data-open-panel="hallmarks">Hallmarks</button>
+          <button id="pauseButton" class="primary-action" type="button">
+            <span class="button-icon">||</span>
+            Pause
+          </button>
+        </nav>
+
+        <aside class="system-sidebar hud-card" aria-label="System state">
+          <section class="meter-panel">
+            <div class="section-title-row">
+              <h2>System State</h2>
+              <span id="stateBadge" class="pill">Silent</span>
+            </div>
+            <div id="meters" class="meters"></div>
+          </section>
+
+          <section class="traits-panel">
+            <div class="section-title-row">
+              <h2>Acquired Hallmarks</h2>
+              <span id="traitCount" class="pill">0</span>
+            </div>
+            <div id="traitList" class="trait-list"></div>
+          </section>
+        </aside>
+
+        <section class="log-panel hud-card log-ticker" aria-label="Biology log">
+          <span class="ticker-label">Bio Log</span>
+          <ol id="eventLog" class="event-log"></ol>
+          <button id="clearLog" class="mini-button" type="button">Clear</button>
+        </section>
+
+        <aside id="panelOverlay" class="panel-overlay hidden" aria-hidden="true">
+          <div class="panel-drawer">
+            <div class="drawer-head">
+              <div>
+                <p id="panelEyebrow" class="eyebrow">Evolution</p>
+                <h2 id="panelTitle">Hallmark Hive</h2>
+              </div>
+              <button id="closePanel" class="mini-button" type="button">Close</button>
+            </div>
+
+            <section class="evolution-panel panel-page active" data-panel-page="hallmarks" aria-label="Hallmark evolution web">
+              <div class="section-title-row">
+                <h2>Hallmark Hive</h2>
+                <span id="labBadge" class="pill">Spend pts</span>
+              </div>
+              <div id="categoryTabs" class="tabs"></div>
+              <div id="upgradeDeck" class="upgrade-deck"></div>
+            </section>
+
+            <section class="organ-panel panel-page" data-panel-page="organs" aria-label="Organ status">
+              <div class="section-title-row">
+                <h2>Organs</h2>
+                <span id="organBadge" class="pill">1 seeded</span>
+              </div>
+              <div id="organGrid" class="organ-grid"></div>
+            </section>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <div id="mutationModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="mutationTitle">
+      <div class="mutation-modal">
+        <div class="modal-head">
+          <div>
+            <p id="mutationStage" class="eyebrow">Spontaneous evolution</p>
+            <h2 id="mutationTitle">Choose a clonal event</h2>
+          </div>
+          <span class="pill">Paused</span>
+        </div>
+        <p id="mutationText" class="modal-copy">A subclone acquired a useful alteration. Pick one event to keep evolving.</p>
+        <div id="mutationChoices" class="modal-choice-grid"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script src="game.js"></script>
+  </body>
+</html>
