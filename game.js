@@ -1611,6 +1611,8 @@
       evolutionProgress: 0,
       detection: 0,
       treatment: 0,
+      clinicallyDetected: false,
+      clinicalResponseLogged: false,
       lethalLoad: 0,
       nextMutation: 10,
       pendingMutations: [],
@@ -1849,13 +1851,13 @@
       organ.immuneHeat = clamp(state.resources.immune * organ.immune + organ.burden * 0.12, 0, 100);
 
       const beforeBurden = organ.burden;
-      const nutrientFactor = clamp(1 - glucoseStress * Math.max(0.18, 1 - state.traits.starvationTolerance) - oxygenStress * Math.max(0.16, 1 - state.traits.oxygenFlex - state.traits.warburg * 0.55), 0.18, 1.42);
+      const nutrientFactor = clamp(1 - glucoseStress * Math.max(0.18, 1 - state.traits.starvationTolerance) - oxygenStress * Math.max(0.16, 1 - state.traits.oxygenFlex - state.traits.warburg * 0.55), 0.24, 1.42);
       const hallmarkMultiplier = 1 + state.bought.size * 0.028 + state.traits.telomerase * 0.04 + state.traits.contactEscape * 0.06;
-      const growth = (0.48 + state.traits.growth * 0.48 + state.traits.biomass * 0.22) * organ.niche * nutrientFactor * (1 + state.traits.angiogenesis * 0.12) * hallmarkMultiplier;
-      const crowdBrake = clamp(1 - organ.burden / (135 + state.traits.contactEscape * 95 + state.traits.angiogenesis * 42 + state.traits.telomerase * 24), 0.08, 1);
-      const immuneKill = organ.burden * organ.immuneHeat * 0.0024 * Math.max(0.14, 1 - state.traits.immuneEvasion * 0.34 - state.traits.antigenStealth * 0.3);
-      const therapyKill = organ.burden * state.treatment * 0.0014 * Math.max(0.22, 1 - state.traits.apoptosisEscape * 0.26 - state.traits.stressTolerance * 0.18);
-      const acidCost = organ.burden * Math.max(0, state.resources.lactate - 62) * 0.0009 * Math.max(0.18, 1 - state.traits.acidShield);
+      const growth = (0.52 + state.traits.growth * 0.48 + state.traits.biomass * 0.22) * organ.niche * nutrientFactor * (1 + state.traits.angiogenesis * 0.12) * hallmarkMultiplier;
+      const crowdBrake = clamp(1 - organ.burden / (135 + state.traits.contactEscape * 95 + state.traits.angiogenesis * 42 + state.traits.telomerase * 24), 0.11, 1);
+      const immuneKill = organ.burden * organ.immuneHeat * 0.002 * Math.max(0.14, 1 - state.traits.immuneEvasion * 0.34 - state.traits.antigenStealth * 0.3);
+      const therapyKill = organ.burden * state.treatment * 0.00105 * Math.max(0.22, 1 - state.traits.apoptosisEscape * 0.26 - state.traits.stressTolerance * 0.18);
+      const acidCost = organ.burden * Math.max(0, state.resources.lactate - 62) * 0.00072 * Math.max(0.18, 1 - state.traits.acidShield);
       const delta = growth * crowdBrake - immuneKill - therapyKill - acidCost;
       organ.burden = clamp(organ.burden + delta, 0, 100);
       organ.seeded = organ.seeded || organ.burden > 0.4;
@@ -1981,12 +1983,21 @@
       toast(`+${bubble.value} evolution point${bubble.value > 1 ? "s" : ""}`);
     } else {
       const reduction = bubble.value;
-      state.detection = clamp(state.detection - reduction, 0, 100);
-      state.treatment = clamp(state.treatment - reduction * 0.18, 0, 100);
+      if (state.clinicallyDetected) {
+        state.detection = 100;
+        state.treatment = clamp(state.treatment - reduction, 0, 100);
+      } else {
+        state.detection = clamp(state.detection - reduction, 0, 100);
+        state.treatment = clamp(state.treatment - reduction * 0.18, 0, 100);
+      }
       state.lethalLoad = clamp(state.lethalLoad + 1.6, 0, 100);
       state.traits.antigenStealth += 0.012;
-      toast(`Detection -${reduction}%`);
-      if (chance(0.22)) log("Stealth selection reduced detection, but the bottleneck added a little genomic risk.");
+      toast(state.clinicallyDetected ? `Clinical response -${reduction}%` : `Detection -${reduction}%`);
+      if (chance(0.22)) {
+        log(state.clinicallyDetected
+          ? "Stealth selection slowed clinical response, but the bottleneck added a little genomic risk."
+          : "Stealth selection reduced detection, but the bottleneck added a little genomic risk.");
+      }
     }
     state.bubbles = state.bubbles.filter((item) => item.id !== id);
     render();
@@ -2001,10 +2012,23 @@
     const symptomNoise = seededOrgans * 0.035 + visibleOrgans * 0.11 + bulkyOrgans * 0.18;
     const chemistryNoise = state.resources.lactate * 0.012 + Math.max(0, state.resources.chaos - 35) * 0.01;
     const stealth = state.traits.antigenStealth * 0.08 + state.traits.immuneEvasion * 0.06;
-    state.detection = clamp(state.detection + burden * 0.035 + symptomNoise + chemistryNoise + spreadNoise - stealth, 0, 100);
-    if (state.detection > 45) {
-      state.treatment = clamp(state.treatment + (state.detection - 42) * 0.055, 0, 100);
-      if (Math.round(state.treatment) === 25) log("Clinical response begins: therapy pressure now removes sensitive clones.");
+    const detectionPressure = burden * 0.035 + symptomNoise + chemistryNoise + spreadNoise - stealth;
+    if (!state.clinicallyDetected) {
+      state.detection = clamp(state.detection + detectionPressure, 0, 100);
+      state.treatment = 0;
+      if (state.detection >= 100) {
+        state.clinicallyDetected = true;
+        state.detection = 100;
+        log("Detection reached 100%: the tumour is clinically visible and response pressure begins.");
+      }
+      return;
+    }
+    state.detection = 100;
+    const responseGain = 1.2 + burden * 0.018 + visibleOrgans * 0.06 + bulkyOrgans * 0.12;
+    state.treatment = clamp(state.treatment + responseGain, 0, 100);
+    if (state.treatment >= 25 && !state.clinicalResponseLogged) {
+      state.clinicalResponseLogged = true;
+      log("Clinical response is escalating: therapy pressure now removes sensitive clones.");
     }
   }
 
@@ -2050,7 +2074,7 @@
       state.victory = false;
       state.endGeneration = state.generation;
       state.endReason = state.treatment >= 100
-        ? "therapy pressure reached 100%"
+        ? "clinical response reached 100%"
         : state.lethalLoad >= 100
           ? "genomic chaos reached lethal levels"
           : "total tumour burden fell below viability";
@@ -2171,7 +2195,7 @@
     els.evoPoints.textContent = fmt(state.evolutionPoints);
     els.bodyColonized.textContent = `${clamp(burden, 0, 100).toFixed(1)}%`;
     els.detection.textContent = pct(state.detection);
-    els.stateBadge.textContent = state.gameOver ? (state.victory ? "Colonized" : "Collapsed") : state.detection > 65 ? "Detected" : burden > 40 ? "Systemic" : "Silent";
+    els.stateBadge.textContent = state.gameOver ? (state.victory ? "Colonized" : "Collapsed") : state.clinicallyDetected ? "Diagnosed" : state.detection > 65 ? "Detected" : burden > 40 ? "Systemic" : "Silent";
     els.pauseButton.disabled = state.gameOver;
     if (state.gameOver) {
       els.pauseButton.innerHTML = state.victory
@@ -2391,7 +2415,9 @@
         ? `${bubble.organName} ${bubble.milestone}%`
         : bubble.type === "evo"
           ? `+${bubble.value} EP`
-          : `-${bubble.value}% detection`;
+          : state.clinicallyDetected
+            ? `-${bubble.value}% clinical response`
+            : `-${bubble.value}% detection`;
       const symbol = bubble.type === "evo" ? "🧫" : "⚗️";
       return `<button class="map-bubble ${bubble.type}" type="button" data-bubble="${bubble.id}" aria-label="${label}" style="left:${bubble.x * 100}%; top:${bubble.y * 100}%">
         <span aria-hidden="true">${symbol}</span>
