@@ -110,6 +110,250 @@ button {
   display: block;
 }
 
+.start-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background:
+    linear-gradient(90deg, rgba(15, 20, 20, 0.92), rgba(15, 20, 20, 0.66) 46%, rgba(15, 20, 20, 0.93)),
+    repeating-linear-gradient(135deg, rgba(255, 216, 123, 0.08) 0 2px, transparent 2px 18px);
+  backdrop-filter: blur(4px);
+}
+
+.start-card {
+  width: min(1180px, calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 2px solid rgba(255, 216, 123, 0.4);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(240, 71, 89, 0.16), transparent 24%),
+    linear-gradient(90deg, rgba(57, 216, 200, 0.08), transparent 40%),
+    #151412;
+  box-shadow: 0 8px 0 #060505, 0 28px 70px rgba(0, 0, 0, 0.58);
+}
+
+.start-hero {
+  min-height: 138px;
+  display: grid;
+  align-content: end;
+  padding: 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 240, 207, 0.1);
+  background:
+    linear-gradient(90deg, rgba(10, 9, 8, 0.38), rgba(10, 9, 8, 0.04)),
+    repeating-linear-gradient(90deg, rgba(255, 243, 223, 0.04) 0 1px, transparent 1px 16px);
+}
+
+.start-hero h2 {
+  margin: 0;
+  color: #ffe8b7;
+  font-family: var(--eurostile-wide);
+  font-size: 5.2rem;
+  font-stretch: condensed;
+  font-variation-settings: "wdth" 76;
+  font-weight: 950;
+  line-height: 0.82;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 #7c2230, 6px 6px 0 rgba(0, 0, 0, 0.45);
+}
+
+.start-hero p:last-child {
+  max-width: 620px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.start-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.45fr minmax(270px, 0.8fr);
+  gap: 12px;
+  min-height: 0;
+}
+
+.start-column,
+.start-details {
+  min-width: 0;
+  padding: 12px;
+  border: 2px solid #40362f;
+  border-radius: 8px;
+  background: rgba(20, 18, 16, 0.88);
+}
+
+.start-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.start-section-head span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  border-radius: 6px;
+  background: #24120f;
+  border: 1px solid rgba(240, 71, 89, 0.65);
+  color: #ff9bad;
+  font-size: 0.76rem;
+  font-weight: 950;
+}
+
+.start-section-head h3,
+.start-details h3 {
+  margin: 0;
+  color: #fff0cf;
+  font-size: 1rem;
+  text-transform: uppercase;
+}
+
+.start-option-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.start-option,
+.origin-token {
+  width: 100%;
+  min-width: 0;
+  border: 2px solid #493d35;
+  border-radius: 8px;
+  background: #1a1714;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
+}
+
+.start-option {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.start-option.active,
+.origin-token.active {
+  border-color: rgba(185, 234, 85, 0.9);
+  background: linear-gradient(180deg, #27351f, #151d14);
+  color: var(--ink);
+}
+
+.start-option-kicker {
+  color: #ffd87b;
+  font-size: 0.68rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.start-option strong,
+.origin-token strong {
+  color: #fff0cf;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+}
+
+.start-option span:last-child,
+.origin-token span {
+  font-size: 0.78rem;
+  line-height: 1.28;
+}
+
+.start-origin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.origin-token {
+  min-height: 104px;
+  display: grid;
+  align-content: space-between;
+  gap: 5px;
+  padding: 10px;
+}
+
+.origin-token small {
+  color: #ffd87b;
+  font-size: 0.66rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.start-details {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.start-details-head {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 240, 207, 0.12);
+}
+
+.start-details-head span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.start-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 7px;
+  background: #11100f;
+  border: 1px solid rgba(255, 240, 207, 0.08);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.start-stat-row strong {
+  color: #ffd87b;
+}
+
+.start-detail-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.start-detail-grid strong {
+  color: #fff0cf;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.start-detail-grid ul {
+  display: grid;
+  gap: 5px;
+  margin: 6px 0 0;
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.start-button {
+  min-height: 58px;
+  border: 2px solid #dfff86;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #b9ea55, #6ccf58);
+  color: #18210a;
+  box-shadow: 0 6px 0 #274b22;
+  font-weight: 950;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
 .top-bar {
   position: absolute;
   top: 18px;
@@ -379,6 +623,31 @@ button:active {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.log-ticker.outcome {
+  border-color: rgba(255, 216, 123, 0.78);
+  background:
+    linear-gradient(90deg, rgba(255, 216, 123, 0.16), transparent 58%),
+    #181614;
+}
+
+.log-ticker.outcome.victory {
+  border-color: rgba(185, 234, 85, 0.9);
+}
+
+.log-ticker.outcome.collapse {
+  border-color: rgba(240, 71, 89, 0.9);
+}
+
+.log-ticker.outcome .event-log li {
+  color: #fff0cf;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.log-ticker.outcome .event-log strong {
+  color: #ffd87b;
 }
 
 .mini-button {
@@ -1061,6 +1330,21 @@ button.req-chip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .start-screen {
+    position: fixed;
+    padding: 10px;
+  }
+
+  .start-card {
+    width: calc(100vw - 20px);
+    max-height: calc(100svh - 20px);
+    padding: 12px;
+  }
+
+  .start-layout {
+    grid-template-columns: 1fr;
+  }
+
   .panel-overlay {
     position: fixed;
   }
@@ -1088,8 +1372,18 @@ button.req-chip {
   .stat-grid,
   .hud-actions,
   .tabs,
-  .organ-grid {
+  .organ-grid,
+  .start-origin-grid {
     grid-template-columns: 1fr;
+  }
+
+  .start-hero {
+    min-height: 118px;
+    padding: 14px;
+  }
+
+  .start-hero h2 {
+    font-size: 2.55rem;
   }
 
   .log-ticker {

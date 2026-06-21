@@ -14,6 +14,41 @@
           <div id="bubbleLayer" class="bubble-layer" aria-label="Clickable biology popups"></div>
         </section>
 
+        <section id="startScreen" class="start-screen" aria-label="Start a new Body Siege run">
+          <div class="start-card">
+            <div class="start-hero">
+              <p class="eyebrow">New malignancy file</p>
+              <h2>Choose Your Primary</h2>
+              <p>
+                Pick the host pressure and tissue of origin. Easy sites expand quickly;
+                protected sites are harder to escape.
+              </p>
+            </div>
+
+            <div class="start-layout">
+              <section class="start-column" aria-label="Difficulty">
+                <div class="start-section-head">
+                  <span>01</span>
+                  <h3>Host Difficulty</h3>
+                </div>
+                <div id="difficultyGrid" class="start-option-grid"></div>
+              </section>
+
+              <section class="start-column" aria-label="Starting organ">
+                <div class="start-section-head">
+                  <span>02</span>
+                  <h3>Tissue Of Origin</h3>
+                </div>
+                <div id="originGrid" class="start-origin-grid"></div>
+              </section>
+
+              <aside id="originDetails" class="start-details" aria-label="Selected origin details"></aside>
+            </div>
+
+            <button id="beginRun" class="start-button" type="button">Begin Colonization</button>
+          </div>
+        </section>
+
         <header class="top-bar" aria-label="Game title">
           <h1>Body Siege</h1>
         </header>

@@ -20,11 +20,18 @@
     { from: "colon", to: "blood", mode: "blood", min: 16, label: "intravasation" },
     { from: "colon", to: "peritoneum", mode: "direct", min: 22, label: "local invasion" },
     { from: "lymph", to: "lung", mode: "lymph", min: 12, label: "thoracic duct" },
+    { from: "lymph", to: "blood", mode: "lymph", min: 15, label: "lymphovenous return" },
     { from: "blood", to: "lung", mode: "blood", min: 5, label: "first capillary bed" },
     { from: "blood", to: "liver", mode: "blood", min: 7, label: "portal filtering" },
     { from: "blood", to: "kidney", mode: "blood", min: 12, label: "renal filtration" },
     { from: "blood", to: "bone", mode: "blood", min: 14, label: "marrow niche" },
+    { from: "lung", to: "blood", mode: "blood", min: 14, label: "pulmonary venous escape" },
+    { from: "liver", to: "blood", mode: "blood", min: 14, label: "hepatic venous invasion" },
+    { from: "kidney", to: "blood", mode: "blood", min: 14, label: "renal venous invasion" },
+    { from: "bone", to: "blood", mode: "blood", min: 16, label: "marrow sinusoid escape" },
     { from: "lung", to: "brain", mode: "barrier", min: 20, label: "blood-brain barrier" },
+    { from: "brain", to: "blood", mode: "barrier", min: 30, label: "blood-brain barrier escape" },
+    { from: "peritoneum", to: "lymph", mode: "lymph", min: 16, label: "peritoneal lymphatics" },
     { from: "liver", to: "peritoneum", mode: "direct", min: 18, label: "surface shedding" }
   ];
 
@@ -42,6 +49,191 @@
     metabolism: "Metabolism",
     immune: "Immune",
     spread: "Spread"
+  };
+
+  const difficultyDefs = {
+    culture: {
+      id: "culture",
+      title: "Culture Dish",
+      tier: "Easy",
+      body: "A forgiving learning run with slow surveillance, cheap hallmarks, and strong early growth.",
+      ep: 14,
+      burdenMultiplier: 1.65,
+      growthRate: 1.38,
+      spreadRate: 1.42,
+      epRate: 1.7,
+      costRate: 0.68,
+      routeThresholdRate: 0.72,
+      detectionRate: 0.42,
+      treatmentRate: 0.46,
+      immuneRate: 0.54,
+      immuneBias: -9,
+      detectionStart: 0,
+      perks: ["Lots of starting EP", "Cheaper hallmarks", "Clinical response builds slowly"],
+      penalties: ["Still needs smart spread choices"]
+    },
+    standard: {
+      id: "standard",
+      title: "New Patient",
+      tier: "Normal",
+      body: "A smoother baseline run with moderate surveillance and more room to recover from mistakes.",
+      ep: 9,
+      burdenMultiplier: 1.3,
+      growthRate: 1.18,
+      spreadRate: 1.22,
+      epRate: 1.32,
+      costRate: 0.78,
+      routeThresholdRate: 0.82,
+      detectionRate: 0.68,
+      treatmentRate: 0.72,
+      immuneRate: 0.76,
+      immuneBias: -4,
+      detectionStart: 0,
+      perks: ["Healthy starting EP", "Lower detection pressure", "Discounted hallmarks"],
+      penalties: ["Poor routes can still stall"]
+    },
+    veteran: {
+      id: "veteran",
+      title: "Immune Veteran",
+      tier: "Hard",
+      body: "Pressure rises faster, but the opening is no longer a knife-edge.",
+      ep: 6,
+      burdenMultiplier: 1.08,
+      growthRate: 1.06,
+      spreadRate: 1.08,
+      epRate: 1.08,
+      costRate: 0.9,
+      routeThresholdRate: 0.92,
+      detectionRate: 0.95,
+      treatmentRate: 0.95,
+      immuneRate: 0.98,
+      immuneBias: 1,
+      detectionStart: 2,
+      perks: ["Closer to the old normal mode"],
+      penalties: ["Detection matters", "Bad sequencing is punished"]
+    },
+    nightmare: {
+      id: "nightmare",
+      title: "Clinical Nightmare",
+      tier: "Brutal",
+      body: "The challenge mode: alert host, faster response, but still enough tools to win.",
+      ep: 4,
+      burdenMultiplier: 0.92,
+      growthRate: 0.98,
+      spreadRate: 0.98,
+      epRate: 0.98,
+      costRate: 1,
+      routeThresholdRate: 1,
+      detectionRate: 1.18,
+      treatmentRate: 1.16,
+      immuneRate: 1.14,
+      immuneBias: 4,
+      detectionStart: 5,
+      perks: ["Maximum challenge"],
+      penalties: ["Fast detection", "Full-price hallmarks", "Strong response after diagnosis"]
+    }
+  };
+
+  const startOrganDefs = {
+    colon: {
+      id: "colon",
+      title: "Colon",
+      archetype: "Classic epithelial primary",
+      burden: 3.6,
+      ep: 0,
+      detection: 0,
+      traits: { contactEscape: 0.04 },
+      perks: ["Route-rich starting site", "Good access to lymph, blood, and peritoneal spread"],
+      penalties: ["Crowding and hypoxia become problems as the mass grows"]
+    },
+    lung: {
+      id: "lung",
+      title: "Lung",
+      archetype: "Oxygen-rich vascular bed",
+      burden: 3.2,
+      ep: 0,
+      detection: 2,
+      traits: { oxygenFlex: 0.12, angiogenesis: 0.1 },
+      perks: ["High oxygen early", "Close to blood-borne routes"],
+      penalties: ["Symptoms and immune traffic raise detection"]
+    },
+    liver: {
+      id: "liver",
+      title: "Liver",
+      archetype: "Metabolic filter",
+      burden: 3.5,
+      ep: 1,
+      detection: 1,
+      traits: { glucoseUptake: 0.16, starvationTolerance: 0.1, liverTropism: 0.18 },
+      perks: ["Nutrient-rich chemistry", "Extra starting EP"],
+      penalties: ["Detox and immune cells notice abnormal metabolism"]
+    },
+    lymph: {
+      id: "lymph",
+      title: "Lymph Node",
+      archetype: "Immune checkpoint hub",
+      burden: 2.9,
+      ep: 1,
+      detection: 4,
+      traits: { lymphSpread: 0.34, immuneEvasion: 0.08 },
+      perks: ["Regional spread begins unlocked", "Connects naturally to thoracic drainage"],
+      penalties: ["Starts inside immune surveillance territory"]
+    },
+    blood: {
+      id: "blood",
+      title: "Bloodstream",
+      archetype: "Circulating tumour cells",
+      burden: 2.5,
+      ep: 3,
+      detection: 6,
+      traits: { intravasation: 0.34, circulationSurvival: 0.36, growth: -0.06 },
+      perks: ["Immediate access to distant organs", "Extra EP from harsh selection"],
+      penalties: ["Low starting burden", "High death rate and visibility"]
+    },
+    bone: {
+      id: "bone",
+      title: "Bone Marrow",
+      archetype: "Protected stem-cell niche",
+      burden: 3,
+      ep: 0,
+      detection: 2,
+      traits: { stressTolerance: 0.16, boneTropism: 0.2, growth: -0.02 },
+      perks: ["Stress-resistant niche", "Good long-run shelter"],
+      penalties: ["Lower oxygen and slower early proliferation"]
+    },
+    kidney: {
+      id: "kidney",
+      title: "Kidney",
+      archetype: "High-flow filter",
+      burden: 3.1,
+      ep: 0,
+      detection: 3,
+      traits: { angiogenesis: 0.08, intravasation: 0.14 },
+      perks: ["Blood-flow access helps escape", "Oxygen is usually available"],
+      penalties: ["Filtration makes abnormal chemistry visible"]
+    },
+    brain: {
+      id: "brain",
+      title: "Brain",
+      archetype: "Blood-brain barrier sanctuary",
+      burden: 2.5,
+      ep: 1,
+      detection: -3,
+      traits: { brainTropism: 0.22, stressTolerance: 0.1, growth: -0.04 },
+      perks: ["Lower immune traffic early", "Brain-tropic chemistry starts unlocked"],
+      penalties: ["Very hard to escape", "Small starting burden", "Reduced starting EP"]
+    },
+    peritoneum: {
+      id: "peritoneum",
+      title: "Peritoneum",
+      archetype: "Surface-spread niche",
+      burden: 3.2,
+      ep: 0,
+      detection: 2,
+      traits: { motility: 0.2, matrixBreak: 0.12 },
+      perks: ["Local invasion starts easier", "Surface seeding can snowball"],
+      penalties: ["Patchy oxygen and inflammation raise risk"]
+    }
   };
 
   const upgrades = [
@@ -1563,6 +1755,11 @@
     panelTitle: byId("panelTitle"),
     panelEyebrow: byId("panelEyebrow"),
     closePanel: byId("closePanel"),
+    startScreen: byId("startScreen"),
+    difficultyGrid: byId("difficultyGrid"),
+    originGrid: byId("originGrid"),
+    originDetails: byId("originDetails"),
+    beginRun: byId("beginRun"),
     toast: byId("toast")
   };
 
@@ -1574,6 +1771,10 @@
   let floatingLabels = [];
   let canvasHover = null;
   let selectedRoute = null;
+  let startConfig = {
+    difficulty: "standard",
+    organ: "colon"
+  };
   let currentTicker = "";
   const logQueue = [];
 
@@ -1597,20 +1798,29 @@
     return `${Math.round(clamp(value, 0, 100))}%`;
   }
 
-  function createState() {
-    return {
+  function createState(config = startConfig, started = false) {
+    const difficulty = difficultyDefs[config.difficulty] || difficultyDefs.standard;
+    const starter = startOrganDefs[config.organ] || startOrganDefs.colon;
+    const startOrganId = starter.id;
+    const startBurden = starter.burden * difficulty.burdenMultiplier;
+    const startingEp = Math.max(1, difficulty.ep + starter.ep);
+    const startingDetection = clamp(difficulty.detectionStart + starter.detection, 0, 100);
+    const run = {
       generation: 0,
-      running: true,
+      running: false,
+      started,
+      difficultyId: difficulty.id,
+      startOrganId,
       gameOver: false,
       victory: false,
       endReason: "",
       endGeneration: null,
-      selectedOrgan: "colon",
+      selectedOrgan: startOrganId,
       selectedCategory: "growth",
       selectedUpgrade: "cyclinE",
-      evolutionPoints: 4,
+      evolutionPoints: startingEp,
       evolutionProgress: 0,
-      detection: 0,
+      detection: startingDetection,
       treatment: 0,
       clinicallyDetected: false,
       clinicalResponseLogged: false,
@@ -1622,6 +1832,17 @@
       nextBubbleId: 1,
       bought: new Set(),
       log: [],
+      rules: {
+        growthRate: difficulty.growthRate,
+        spreadRate: difficulty.spreadRate,
+        epRate: difficulty.epRate,
+        costRate: difficulty.costRate,
+        routeThresholdRate: difficulty.routeThresholdRate,
+        detectionRate: difficulty.detectionRate,
+        treatmentRate: difficulty.treatmentRate,
+        immuneRate: difficulty.immuneRate,
+        immuneBias: difficulty.immuneBias
+      },
       resources: {
         oxygen: 90,
         glucose: 88,
@@ -1666,18 +1887,26 @@
       },
       organs: organDefs.map((organ) => ({
         ...organ,
-        burden: organ.burden || 0,
-        seeded: Boolean(organ.seeded),
-        nextEpMilestone: Math.max(10, Math.floor((organ.burden || 0) / 10) * 10 + 10),
+        burden: organ.id === startOrganId ? startBurden : 0,
+        seeded: organ.id === startOrganId,
+        nextEpMilestone: Math.max(10, Math.floor((organ.id === startOrganId ? startBurden : 0) / 10) * 10 + 10),
         hypoxia: 0,
         immuneHeat: 0,
         lastDelta: 0
       }))
     };
+    applyStartingTraits(run, starter);
+    return run;
+  }
+
+  function applyStartingTraits(run, starter) {
+    Object.entries(starter.traits || {}).forEach(([key, value]) => {
+      run.traits[key] = (run.traits[key] || 0) + value;
+    });
   }
 
   function setup() {
-    state = createState();
+    state = createState(startConfig, false);
     els.meters.innerHTML = meterDefs.map(([key, label, color]) => {
       return `<div class="meter-row" data-meter="${key}">
         <div class="meter-top"><span>${label}</span><strong>0%</strong></div>
@@ -1747,6 +1976,19 @@
       if (!button) return;
       collectBubble(Number(button.dataset.bubble));
     });
+    els.difficultyGrid.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-difficulty]");
+      if (!button || state.started) return;
+      startConfig = { ...startConfig, difficulty: button.dataset.difficulty };
+      previewStartConfig();
+    });
+    els.originGrid.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-origin]");
+      if (!button || state.started) return;
+      startConfig = { ...startConfig, organ: button.dataset.origin };
+      previewStartConfig();
+    });
+    els.beginRun.addEventListener("click", beginRun);
     els.bodyCanvas.addEventListener("mousemove", handleCanvasMove);
     els.bodyCanvas.addEventListener("mouseleave", () => {
       canvasHover = null;
@@ -1755,14 +1997,92 @@
     els.bodyCanvas.addEventListener("click", handleCanvasClick);
     window.addEventListener("resize", () => renderCanvas());
 
-    log("A small primary tumour starts in the colon. It can grow locally, but distant colonization needs invasion, vessels, and niche compatibility.");
     render();
-    start();
+    renderStartScreen();
     requestAnimationFrame(animate);
   }
 
+  function previewStartConfig() {
+    state = createState(startConfig, false);
+    canvasHover = null;
+    selectedRoute = null;
+    routePulses = [];
+    floatingLabels = [];
+    render();
+    renderStartScreen();
+  }
+
+  function beginRun() {
+    const difficulty = difficultyDefs[startConfig.difficulty] || difficultyDefs.standard;
+    const starter = startOrganDefs[startConfig.organ] || startOrganDefs.colon;
+    state = createState(startConfig, true);
+    canvasHover = null;
+    selectedRoute = null;
+    routePulses = [];
+    floatingLabels = [];
+    closePanel();
+    els.startScreen.classList.add("hidden");
+    log(`${difficulty.title} run started in the ${starter.title}. ${starter.archetype}: ${starter.perks[0].toLowerCase()}.`);
+    log("Colonize the body before immune detection becomes clinical response.");
+    render();
+    start();
+  }
+
+  function renderStartScreen() {
+    if (state.started) return;
+    const currentDifficulty = difficultyDefs[startConfig.difficulty] || difficultyDefs.standard;
+    const currentOrigin = startOrganDefs[startConfig.organ] || startOrganDefs.colon;
+    const organ = organDefs.find((item) => item.id === currentOrigin.id) || organDefs[0];
+
+    els.difficultyGrid.innerHTML = Object.values(difficultyDefs).map((difficulty) => {
+      const active = difficulty.id === currentDifficulty.id ? " active" : "";
+      return `<button class="start-option${active}" type="button" data-difficulty="${difficulty.id}">
+        <span class="start-option-kicker">${difficulty.tier}</span>
+        <strong>${difficulty.title}</strong>
+        <span>${difficulty.body}</span>
+      </button>`;
+    }).join("");
+
+    els.originGrid.innerHTML = Object.values(startOrganDefs).map((origin) => {
+      const active = origin.id === currentOrigin.id ? " active" : "";
+      const mapOrgan = organDefs.find((item) => item.id === origin.id);
+      const difficultyText = mapOrgan ? Math.round(mapOrgan.difficulty * 100) : 0;
+      return `<button class="origin-token${active}" type="button" data-origin="${origin.id}">
+        <strong>${origin.title}</strong>
+        <span>${origin.archetype}</span>
+        <small>escape difficulty ${difficultyText}</small>
+      </button>`;
+    }).join("");
+
+    const ep = Math.max(1, currentDifficulty.ep + currentOrigin.ep);
+    const burden = currentOrigin.burden * currentDifficulty.burdenMultiplier;
+    const detection = clamp(currentDifficulty.detectionStart + currentOrigin.detection, 0, 100);
+    const perks = currentOrigin.perks.map((item) => `<li>${item}</li>`).join("");
+    const penalties = currentOrigin.penalties.map((item) => `<li>${item}</li>`).join("");
+    els.originDetails.innerHTML = `<div class="start-details-head">
+        <p class="eyebrow">Selected origin</p>
+        <h3>${currentOrigin.title}</h3>
+        <span>${organ.system}</span>
+      </div>
+      <div class="start-stat-row">
+        <span>Starting burden</span><strong>${burden.toFixed(1)}%</strong>
+      </div>
+      <div class="start-stat-row">
+        <span>Starting EP</span><strong>${ep}</strong>
+      </div>
+      <div class="start-stat-row">
+        <span>Initial detection</span><strong>${pct(detection)}</strong>
+      </div>
+      <div class="start-detail-grid">
+        <div><strong>Advantages</strong><ul>${perks}</ul></div>
+        <div><strong>Trade-offs</strong><ul>${penalties}</ul></div>
+      </div>`;
+
+    els.beginRun.textContent = `Begin ${currentDifficulty.tier} Run`;
+  }
+
   function start() {
-    if (timer || state.gameOver || state.pendingMutations.length) return;
+    if (timer || !state.started || state.gameOver || state.pendingMutations.length) return;
     state.running = true;
     els.pauseButton.innerHTML = '<span class="button-icon">||</span> Pause';
     timer = window.setInterval(tick, TICK_MS);
@@ -1776,7 +2096,7 @@
   }
 
   function togglePause() {
-    if (state.gameOver || state.pendingMutations.length) return;
+    if (!state.started || state.gameOver || state.pendingMutations.length) return;
     if (timer) stop();
     else start();
     render();
@@ -1809,7 +2129,7 @@
   }
 
   function tick() {
-    if (state.gameOver || state.pendingMutations.length) return;
+    if (!state.started || state.gameOver || state.pendingMutations.length) return;
     state.generation += 1;
     updateResources();
     growOrgans();
@@ -1827,10 +2147,11 @@
     const burden = getBodyColonized();
     const vesselHelp = state.traits.angiogenesis * 12;
     const glucoseHelp = state.traits.glucoseUptake * 8;
-    state.resources.oxygen = clamp(95 - burden * 0.78 * Math.max(0.35, 1 - state.traits.oxygenFlex * 0.32) + vesselHelp, 4, 100);
-    state.resources.glucose = clamp(92 - burden * 0.62 * state.traits.nutrientDemand + glucoseHelp + vesselHelp * 0.4, 4, 100);
-    state.resources.lactate = clamp(burden * (0.16 + state.traits.warburg * 0.28 + state.traits.lactateProduction * 0.22) - state.traits.lactateClearance * 16, 0, 100);
-    state.resources.immune = clamp(state.detection * 0.72 + burden * 0.28 - state.traits.immuneEvasion * 16 - state.traits.antigenStealth * 14 + state.traits.nkRisk * 8, 0, 100);
+    state.resources.oxygen = clamp(97 - burden * 0.58 * Math.max(0.3, 1 - state.traits.oxygenFlex * 0.36) + vesselHelp, 8, 100);
+    state.resources.glucose = clamp(95 - burden * 0.46 * state.traits.nutrientDemand + glucoseHelp + vesselHelp * 0.46, 8, 100);
+    state.resources.lactate = clamp(burden * (0.12 + state.traits.warburg * 0.22 + state.traits.lactateProduction * 0.17) - state.traits.lactateClearance * 18, 0, 100);
+    const immuneBase = state.detection * 0.72 + burden * 0.28 - state.traits.immuneEvasion * 16 - state.traits.antigenStealth * 14 + state.traits.nkRisk * 8;
+    state.resources.immune = clamp(immuneBase * state.rules.immuneRate + state.rules.immuneBias, 0, 100);
     state.resources.therapy = state.treatment;
     state.resources.chaos = clamp(state.lethalLoad + state.traits.genomeInstability * 22 + state.traits.mutationRate * 9 - state.traits.chaosControl * 20, 0, 100);
   }
@@ -1847,13 +2168,13 @@
       organ.immuneHeat = clamp(state.resources.immune * organ.immune + organ.burden * 0.12, 0, 100);
 
       const beforeBurden = organ.burden;
-      const nutrientFactor = clamp(1 - glucoseStress * Math.max(0.18, 1 - state.traits.starvationTolerance) - oxygenStress * Math.max(0.16, 1 - state.traits.oxygenFlex - state.traits.warburg * 0.55), 0.24, 1.42);
-      const hallmarkMultiplier = 1 + state.bought.size * 0.028 + state.traits.telomerase * 0.04 + state.traits.contactEscape * 0.06;
-      const growth = (0.52 + state.traits.growth * 0.48 + state.traits.biomass * 0.22) * organ.niche * nutrientFactor * (1 + state.traits.angiogenesis * 0.12) * hallmarkMultiplier;
+      const nutrientFactor = clamp(1 - glucoseStress * Math.max(0.14, 1 - state.traits.starvationTolerance) - oxygenStress * Math.max(0.12, 1 - state.traits.oxygenFlex - state.traits.warburg * 0.6), 0.34, 1.5);
+      const hallmarkMultiplier = 1 + state.bought.size * 0.036 + state.traits.telomerase * 0.05 + state.traits.contactEscape * 0.075;
+      const growth = (0.52 + state.traits.growth * 0.48 + state.traits.biomass * 0.22) * organ.niche * nutrientFactor * (1 + state.traits.angiogenesis * 0.12) * hallmarkMultiplier * state.rules.growthRate;
       const crowdBrake = clamp(1 - organ.burden / (135 + state.traits.contactEscape * 95 + state.traits.angiogenesis * 42 + state.traits.telomerase * 24), 0.11, 1);
-      const immuneKill = organ.burden * organ.immuneHeat * 0.002 * Math.max(0.14, 1 - state.traits.immuneEvasion * 0.34 - state.traits.antigenStealth * 0.3);
-      const therapyKill = organ.burden * state.treatment * 0.00105 * Math.max(0.22, 1 - state.traits.apoptosisEscape * 0.26 - state.traits.stressTolerance * 0.18);
-      const acidCost = organ.burden * Math.max(0, state.resources.lactate - 62) * 0.00072 * Math.max(0.18, 1 - state.traits.acidShield);
+      const immuneKill = organ.burden * organ.immuneHeat * 0.00145 * Math.max(0.1, 1 - state.traits.immuneEvasion * 0.38 - state.traits.antigenStealth * 0.34);
+      const therapyKill = organ.burden * state.treatment * 0.00078 * Math.max(0.16, 1 - state.traits.apoptosisEscape * 0.3 - state.traits.stressTolerance * 0.22);
+      const acidCost = organ.burden * Math.max(0, state.resources.lactate - 68) * 0.00052 * Math.max(0.14, 1 - state.traits.acidShield);
       const delta = growth * crowdBrake - immuneKill - therapyKill - acidCost;
       organ.burden = clamp(organ.burden + delta, 0, 100);
       organ.seeded = organ.seeded || organ.burden > 0.4;
@@ -1866,15 +2187,15 @@
     routes.forEach((route) => {
       const from = getOrgan(route.from);
       const to = getOrgan(route.to);
-      if (!from || !to || from.burden < route.min) return;
+      if (!from || !to || from.burden < route.min * state.rules.routeThresholdRate) return;
       const access = getRouteAccess(route);
       if (access <= 0) return;
       const tropism = getTropism(to);
-      const bottleneck = to.difficulty * Math.max(0.22, 1 - state.traits.exosomes * 0.24 - state.traits.colonization * 0.28 - tropism * 0.2);
-      const pressure = to.immune * state.resources.immune * 0.004;
+      const bottleneck = to.difficulty * Math.max(0.16, 1 - state.traits.exosomes * 0.28 - state.traits.colonization * 0.34 - tropism * 0.24);
+      const pressure = to.immune * state.resources.immune * 0.003;
       const spreadInvestment = state.traits.motility + state.traits.matrixBreak + state.traits.intravasation + state.traits.lymphSpread + state.traits.exosomes;
-      const seedPower = (from.burden / 100) * access * (0.34 + state.traits.circulationSurvival * 0.24 + state.traits.colonization * 0.24 + tropism * 0.24 + spreadInvestment * 0.035);
-      const chanceToSeed = clamp(seedPower - bottleneck * 0.05 - pressure * 0.02, 0, 0.36);
+      const seedPower = (from.burden / 100) * access * (0.42 + state.traits.circulationSurvival * 0.28 + state.traits.colonization * 0.3 + tropism * 0.28 + spreadInvestment * 0.045) * state.rules.spreadRate;
+      const chanceToSeed = clamp(seedPower - bottleneck * 0.036 - pressure * 0.014, 0, 0.46);
 
       if (!to.seeded && chance(chanceToSeed)) {
         const seed = 0.9 + seedPower * 5;
@@ -1884,7 +2205,7 @@
         addRoutePulse(route, to.id);
         checkOrganEpMilestones(to, beforeBurden);
         log(`${to.name} seeded through ${route.label}. Most travellers died, but one clone matched the niche.`);
-      } else if (to.seeded && chance(clamp(chanceToSeed * 1.8, 0, 0.42))) {
+      } else if (to.seeded && chance(clamp(chanceToSeed * 2.1, 0, 0.5))) {
         const beforeBurden = to.burden;
         to.burden = clamp(to.burden + 0.25 + seedPower * 1.5, 0, 100);
         addRoutePulse(route, to.id);
@@ -1911,7 +2232,7 @@
   function updateEvolutionPoints() {
     const burden = getBodyColonized();
     const seeded = state.organs.filter((organ) => organ.seeded && organ.burden > 0.5).length;
-    state.evolutionProgress += 0.16 + burden / 115 + seeded * 0.018 + state.traits.mutationRate * 0.04;
+    state.evolutionProgress += (0.16 + burden / 115 + seeded * 0.018 + state.traits.mutationRate * 0.04) * state.rules.epRate;
     while (state.evolutionProgress >= 1) {
       state.evolutionPoints += 1;
       state.evolutionProgress -= 1;
@@ -2004,11 +2325,11 @@
     const seededOrgans = state.organs.filter((organ) => organ.seeded && organ.burden > 0.5).length;
     const visibleOrgans = state.organs.filter((organ) => organ.burden > 12).length;
     const bulkyOrgans = state.organs.filter((organ) => organ.burden > 35).length;
-    const spreadNoise = (state.traits.intravasation + state.traits.matrixBreak + state.traits.motility + state.traits.angiogenesis) * 0.08;
-    const symptomNoise = seededOrgans * 0.035 + visibleOrgans * 0.11 + bulkyOrgans * 0.18;
-    const chemistryNoise = state.resources.lactate * 0.012 + Math.max(0, state.resources.chaos - 35) * 0.01;
-    const stealth = state.traits.antigenStealth * 0.08 + state.traits.immuneEvasion * 0.06;
-    const detectionPressure = burden * 0.035 + symptomNoise + chemistryNoise + spreadNoise - stealth;
+    const spreadNoise = (state.traits.intravasation + state.traits.matrixBreak + state.traits.motility + state.traits.angiogenesis) * 0.055;
+    const symptomNoise = seededOrgans * 0.024 + visibleOrgans * 0.075 + bulkyOrgans * 0.13;
+    const chemistryNoise = state.resources.lactate * 0.008 + Math.max(0, state.resources.chaos - 40) * 0.007;
+    const stealth = state.traits.antigenStealth * 0.1 + state.traits.immuneEvasion * 0.08;
+    const detectionPressure = (burden * 0.026 + symptomNoise + chemistryNoise + spreadNoise - stealth) * state.rules.detectionRate;
     if (!state.clinicallyDetected) {
       state.detection = clamp(state.detection + detectionPressure, 0, 100);
       state.treatment = 0;
@@ -2020,7 +2341,7 @@
       return;
     }
     state.detection = 100;
-    const responseGain = 1.2 + burden * 0.018 + visibleOrgans * 0.06 + bulkyOrgans * 0.12;
+    const responseGain = (0.85 + burden * 0.014 + visibleOrgans * 0.045 + bulkyOrgans * 0.09) * state.rules.treatmentRate;
     state.treatment = clamp(state.treatment + responseGain, 0, 100);
     if (state.treatment >= 25 && !state.clinicalResponseLogged) {
       state.clinicalResponseLogged = true;
@@ -2029,8 +2350,8 @@
   }
 
   function updateGenomicChaos() {
-    const chaosGain = state.traits.genomeInstability * 0.28 + state.traits.mutationRate * 0.12 + Math.max(0, state.resources.lactate - 60) * 0.008;
-    const control = 0.16 + state.traits.chaosControl * 0.2 + state.traits.stressTolerance * 0.06;
+    const chaosGain = state.traits.genomeInstability * 0.22 + state.traits.mutationRate * 0.09 + Math.max(0, state.resources.lactate - 68) * 0.006;
+    const control = 0.2 + state.traits.chaosControl * 0.23 + state.traits.stressTolerance * 0.08;
     state.lethalLoad = clamp(state.lethalLoad + chaosGain - control, 0, 100);
     if (state.lethalLoad > 70 && chance(0.15)) {
       const organ = getLargestOrgan();
@@ -2082,16 +2403,17 @@
 
   function buyUpgrade(id) {
     const upgrade = upgrades.find((item) => item.id === id);
-    if (!upgrade || state.bought.has(id) || state.gameOver) return;
+    if (!upgrade || !state.started || state.bought.has(id) || state.gameOver) return;
+    const cost = getUpgradeCost(upgrade);
     if (!isUpgradeUnlocked(upgrade)) {
       toast(`Needs ${getRequirementText(upgrade)}`);
       return;
     }
-    if (state.evolutionPoints < upgrade.cost) {
-      toast(`${upgrade.cost - state.evolutionPoints} more evolution pts needed`);
+    if (state.evolutionPoints < cost) {
+      toast(`${cost - state.evolutionPoints} more evolution pts needed`);
       return;
     }
-    state.evolutionPoints -= upgrade.cost;
+    state.evolutionPoints -= cost;
     state.bought.add(id);
     upgrade.apply(state);
     log(`Evolved ${upgrade.title}.`);
@@ -2124,6 +2446,11 @@
 
   function getUpgrade(id) {
     return upgrades.find((upgrade) => upgrade.id === id);
+  }
+
+  function getUpgradeCost(upgrade) {
+    const rate = state && state.rules ? state.rules.costRate : 1;
+    return Math.max(1, Math.ceil(upgrade.cost * rate));
   }
 
   function isUpgradeUnlocked(upgrade) {
@@ -2192,8 +2519,10 @@
     els.bodyColonized.textContent = `${clamp(burden, 0, 100).toFixed(1)}%`;
     els.detection.textContent = pct(state.detection);
     els.stateBadge.textContent = state.gameOver ? (state.victory ? "Colonized" : "Collapsed") : state.clinicallyDetected ? "Diagnosed" : state.detection > 65 ? "Detected" : burden > 40 ? "Systemic" : "Silent";
-    els.pauseButton.disabled = state.gameOver;
-    if (state.gameOver) {
+    els.pauseButton.disabled = state.gameOver || !state.started;
+    if (!state.started) {
+      els.pauseButton.innerHTML = '<span class="button-icon">></span> Start';
+    } else if (state.gameOver) {
       els.pauseButton.innerHTML = state.victory
         ? '<span class="button-icon">100</span> Complete'
         : '<span class="button-icon">x</span> Collapsed';
@@ -2267,16 +2596,18 @@
       const stateClass = getUpgradeStateClass(upgrade);
       const status = getUpgradeStatus(upgrade);
       const selectedClass = upgrade.id === selected.id ? "selected" : "";
+      const cost = getUpgradeCost(upgrade);
       return `<button class="honey-node ${stateClass} ${selectedClass}" type="button" data-upgrade="${upgrade.id}" aria-label="${upgrade.title}, ${status}" style="left:${upgrade.x}%; top:${upgrade.y}%">
         <span class="honey-glyph">${upgrade.glyph}</span>
         <span class="honey-title">${upgrade.title}</span>
-        <span class="honey-cost">${state.bought.has(upgrade.id) ? "done" : `${upgrade.cost} EP`}</span>
+        <span class="honey-cost">${state.bought.has(upgrade.id) ? "done" : `${cost} EP`}</span>
       </button>`;
     }).join("");
 
     const selectedBought = state.bought.has(selected.id);
     const selectedUnlocked = isUpgradeUnlocked(selected);
-    const selectedAffordable = state.evolutionPoints >= selected.cost;
+    const selectedCost = getUpgradeCost(selected);
+    const selectedAffordable = state.evolutionPoints >= selectedCost;
     const actionDisabled = selectedBought || !selectedUnlocked || !selectedAffordable || state.gameOver;
     const actionText = selectedBought
       ? "Evolved"
@@ -2284,7 +2615,7 @@
         ? "Locked"
         : selectedAffordable
           ? "Evolve"
-          : `${selected.cost - state.evolutionPoints} EP short`;
+          : `${selectedCost - state.evolutionPoints} EP short`;
     const requirements = (selected.requires || []).length
       ? selected.requires.map((id) => {
         const req = getUpgrade(id);
@@ -2325,7 +2656,7 @@
           <strong>Biology tags</strong>
           <div class="tags">${selected.tags.map((tag) => `<span class="tag">${tag}</span>`).join("")}</div>
         </div>
-        <button class="evolve-button" type="button" data-buy-upgrade="${selected.id}" ${actionDisabled ? "disabled" : ""}>${actionText} <span>${selected.cost} EP</span></button>
+        <button class="evolve-button" type="button" data-buy-upgrade="${selected.id}" ${actionDisabled ? "disabled" : ""}>${actionText} <span>${selectedCost} EP</span></button>
       </aside>
     </div>`;
   }
@@ -2338,7 +2669,7 @@
   }
 
   function getDefaultUpgrade(cards) {
-    return cards.find((upgrade) => !state.bought.has(upgrade.id) && isUpgradeUnlocked(upgrade) && state.evolutionPoints >= upgrade.cost)
+    return cards.find((upgrade) => !state.bought.has(upgrade.id) && isUpgradeUnlocked(upgrade) && state.evolutionPoints >= getUpgradeCost(upgrade))
       || cards.find((upgrade) => !state.bought.has(upgrade.id) && isUpgradeUnlocked(upgrade))
       || cards[0];
   }
@@ -2346,15 +2677,16 @@
   function getUpgradeStateClass(upgrade) {
     if (state.bought.has(upgrade.id)) return "bought";
     if (!isUpgradeUnlocked(upgrade)) return "locked";
-    if (state.evolutionPoints >= upgrade.cost) return "ready";
+    if (state.evolutionPoints >= getUpgradeCost(upgrade)) return "ready";
     return "priced";
   }
 
   function getUpgradeStatus(upgrade) {
     if (state.bought.has(upgrade.id)) return "evolved";
     if (!isUpgradeUnlocked(upgrade)) return `needs ${getRequirementText(upgrade)}`;
-    if (state.evolutionPoints >= upgrade.cost) return "available";
-    return `${upgrade.cost - state.evolutionPoints} EP short`;
+    const cost = getUpgradeCost(upgrade);
+    if (state.evolutionPoints >= cost) return "available";
+    return `${cost - state.evolutionPoints} EP short`;
   }
 
   function renderOrgans() {
@@ -2383,6 +2715,19 @@
   }
 
   function renderLog() {
+    const logPanel = els.eventLog.closest(".log-ticker");
+    logPanel.classList.toggle("outcome", state.gameOver);
+    logPanel.classList.toggle("victory", state.gameOver && state.victory);
+    logPanel.classList.toggle("collapse", state.gameOver && !state.victory);
+    logPanel.querySelector(".ticker-label").textContent = state.gameOver ? "Outcome" : "Bio Log";
+
+    if (state.gameOver) {
+      const title = state.victory ? "BODY COLONIZED" : "LINEAGE COLLAPSED";
+      const reason = state.endReason || "run ended";
+      els.eventLog.innerHTML = `<li><strong>${title}</strong> at generation ${state.endGeneration || state.generation}: ${reason}.</li>`;
+      return;
+    }
+
     const message = currentTicker || state.log[0] || "No biology events yet.";
     els.eventLog.innerHTML = `<li>${message}</li>`;
   }
@@ -2524,7 +2869,7 @@
     routes.forEach((route) => {
       const from = getOrgan(route.from);
       const to = getOrgan(route.to);
-      const active = from && to && from.burden >= route.min && getRouteAccess(route) > 0.02;
+      const active = from && to && from.burden >= route.min * state.rules.routeThresholdRate && getRouteAccess(route) > 0.02;
       const a = toCanvas(from, view);
       const b = toCanvas(to, view);
       ctx.globalAlpha = active ? 0.56 : 0.16;
