@@ -1573,6 +1573,7 @@
   let routePulses = [];
   let floatingLabels = [];
   let canvasHover = null;
+  let selectedRoute = null;
   let currentTicker = "";
   const logQueue = [];
 
@@ -1751,12 +1752,7 @@
       canvasHover = null;
       renderCanvas();
     });
-    els.bodyCanvas.addEventListener("click", () => {
-      if (canvasHover) {
-        state.selectedOrgan = canvasHover;
-        render();
-      }
-    });
+    els.bodyCanvas.addEventListener("click", handleCanvasClick);
     window.addEventListener("resize", () => renderCanvas());
 
     log("A small primary tumour starts in the colon. It can grow locally, but distant colonization needs invasion, vessels, and niche compatibility.");
@@ -2627,6 +2623,20 @@
       drawLabel(ctx, `${organ.name}: ${organ.seeded ? pct(organ.burden) : "unseeded"}`, pos.x + 16, pos.y - 26, "#f4f7f2");
     }
     floatingLabels = floatingLabels.filter((label) => label.life > 0);
+
+    if (selectedRoute) {
+      const p = getRouteLabelPoint(selectedRoute, view);
+      const from = getOrgan(selectedRoute.from);
+      const to = getOrgan(selectedRoute.to);
+
+      drawLabel(
+         ctx,
+         `${from.name} to ${to.name}: ${selectedRoute.label}`,
+         p.x + 14,
+         p.y - 18,
+         "#ffd87b"
+      );
+    }
   }
 
   function handleCanvasMove(event) {
@@ -2646,6 +2656,86 @@
     canvasHover = found;
     renderCanvas();
   }
+
+  function handleCanvasClick(event) {
+  const point = getCanvasPoint(event);
+  const view = getBodyView(els.bodyCanvas.width, els.bodyCanvas.height);
+  const route = getRouteAtPoint(point.x, point.y, view);
+
+  if (route) {
+    selectedRoute = route;
+    renderCanvas();
+    return;
+  }
+
+  selectedRoute = null;
+
+  if (canvasHover) {
+    state.selectedOrgan = canvasHover;
+    render();
+    return;
+  }
+
+  renderCanvas();
+}
+
+function getCanvasPoint(event) {
+  const rect = els.bodyCanvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+
+  return {
+    x: (event.clientX - rect.left) * dpr,
+    y: (event.clientY - rect.top) * dpr
+  };
+}
+
+function getRouteAtPoint(x, y, view) {
+  let closestRoute = null;
+  let closestDistance = Infinity;
+  const hitRadius = Math.max(12, view.w / 42);
+
+  routes.forEach((route) => {
+    const from = getOrgan(route.from);
+    const to = getOrgan(route.to);
+    if (!from || !to) return;
+
+    const a = toCanvas(from, view);
+    const b = toCanvas(to, view);
+    const cx = (a.x + b.x) / 2 + Math.sin(a.y + b.y) * view.w * 0.035;
+    const cy = (a.y + b.y) / 2 - view.h * 0.035;
+
+    const distance = distanceToRoute(x, y, a.x, a.y, cx, cy, b.x, b.y);
+
+    if (distance < hitRadius && distance < closestDistance) {
+      closestRoute = route;
+      closestDistance = distance;
+    }
+  });
+
+  return closestRoute;
+}
+
+function distanceToRoute(px, py, x1, y1, cx, cy, x2, y2) {
+  let best = Infinity;
+
+  for (let i = 0; i <= 32; i += 1) {
+    const p = quadraticPoint(x1, y1, cx, cy, x2, y2, i / 32);
+    best = Math.min(best, Math.hypot(px - p.x, py - p.y));
+  }
+
+  return best;
+}
+
+function getRouteLabelPoint(route, view) {
+  const from = getOrgan(route.from);
+  const to = getOrgan(route.to);
+  const a = toCanvas(from, view);
+  const b = toCanvas(to, view);
+  const cx = (a.x + b.x) / 2 + Math.sin(a.y + b.y) * view.w * 0.035;
+  const cy = (a.y + b.y) / 2 - view.h * 0.035;
+
+  return quadraticPoint(a.x, a.y, cx, cy, b.x, b.y, 0.5);
+}
 
   function toCanvas(organ, view) {
     return {
