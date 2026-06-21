@@ -10,7 +10,7 @@
     { id: "lung", name: "Lung", system: "oxygen exchange", x: 0.49, y: 0.31, r: 0.056, weight: 1.1, niche: 0.96, oxygen: 1, immune: 0.74, difficulty: 0.48, seeded: false, burden: 0 },
     { id: "liver", name: "Liver", system: "metabolism", x: 0.59, y: 0.58, r: 0.055, weight: 1.15, niche: 1.05, oxygen: 0.84, immune: 0.7, difficulty: 0.38, seeded: false, burden: 0 },
     { id: "bone", name: "Bone marrow", system: "matrix niche", x: 0.34, y: 0.76, r: 0.045, weight: 0.95, niche: 0.84, oxygen: 0.62, immune: 0.68, difficulty: 0.56, seeded: false, burden: 0 },
-    { id: "kidney", name: "Kidney", system: "filtration", x: 0.67, y: 0.66, r: 0.042, weight: 0.82, niche: 0.78, oxygen: 0.86, immune: 0.72, difficulty: 0.54, seeded: false, burden: 0 },
+    { id: "kidney", name: "Kidney", system: "filtration", x: 0.6, y: 0.66, r: 0.042, weight: 0.82, niche: 0.78, oxygen: 0.86, immune: 0.72, difficulty: 0.54, seeded: false, burden: 0 },
     { id: "brain", name: "Brain", system: "blood-brain barrier", x: 0.5, y: 0.13, r: 0.046, weight: 1, niche: 0.7, oxygen: 0.92, immune: 0.6, difficulty: 0.82, seeded: false, burden: 0 },
     { id: "peritoneum", name: "Peritoneum", system: "surface spread", x: 0.44, y: 0.65, r: 0.038, weight: 0.68, niche: 0.9, oxygen: 0.7, immune: 0.6, difficulty: 0.46, seeded: false, burden: 0 }
   ];
