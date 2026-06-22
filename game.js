@@ -11,7 +11,7 @@
     { id: "liver", name: "Liver", system: "metabolism", x: 0.38, y: 0.56, r: 0.055, weight: 1.15, niche: 1.05, oxygen: 0.84, immune: 0.7, difficulty: 0.38, seeded: false, burden: 0 },
     { id: "bone", name: "Bone marrow", system: "matrix niche", x: 0.62, y: 0.58, r: 0.045, weight: 0.95, niche: 0.84, oxygen: 0.62, immune: 0.68, difficulty: 0.56, seeded: false, burden: 0 },
     { id: "kidney", name: "Kidney", system: "filtration", x: 0.62, y: 0.76, r: 0.042, weight: 0.82, niche: 0.78, oxygen: 0.86, immune: 0.72, difficulty: 0.54, seeded: false, burden: 0 },
-    { id: "brain", name: "Brain", system: "blood-brain barrier", x: 0.5, y: 0.13, r: 0.046, weight: 1, niche: 0.7, oxygen: 0.92, immune: 0.6, difficulty: 0.82, seeded: false, burden: 0 },
+    { id: "brain", name: "Brain", system: "blood-brain barrier", x: 0.5, y: 0.13, r: 0.046, weight: 1, niche: 0.7, oxygen: 0.92, immune: 0.6, difficulty: 0.7, seeded: false, burden: 0 },
     { id: "peritoneum", name: "Peritoneum", system: "surface spread", x: 0.5, y: 0.65, r: 0.038, weight: 0.68, niche: 0.9, oxygen: 0.7, immune: 0.6, difficulty: 0.46, seeded: false, burden: 0 }
   ];
 
@@ -64,6 +64,8 @@
       epRate: 1.7,
       costRate: 0.68,
       routeThresholdRate: 0.72,
+      crowdBase: 170,
+      clinicalPivotEp: 6,
       detectionRate: 0.42,
       treatmentRate: 0.46,
       immuneRate: 0.54,
@@ -84,6 +86,8 @@
       epRate: 1.32,
       costRate: 0.78,
       routeThresholdRate: 0.82,
+      crowdBase: 160,
+      clinicalPivotEp: 8,
       detectionRate: 0.68,
       treatmentRate: 0.72,
       immuneRate: 0.76,
@@ -104,6 +108,8 @@
       epRate: 1.08,
       costRate: 0.9,
       routeThresholdRate: 0.92,
+      crowdBase: 155,
+      clinicalPivotEp: 8,
       detectionRate: 0.95,
       treatmentRate: 0.95,
       immuneRate: 0.98,
@@ -121,9 +127,11 @@
       burdenMultiplier: 0.92,
       growthRate: 0.98,
       spreadRate: 0.98,
-      epRate: 0.98,
+      epRate: 1.08,
       costRate: 1,
       routeThresholdRate: 1,
+      crowdBase: 155,
+      clinicalPivotEp: 8,
       detectionRate: 1.18,
       treatmentRate: 1.16,
       immuneRate: 1.14,
@@ -1838,6 +1846,8 @@
         epRate: difficulty.epRate,
         costRate: difficulty.costRate,
         routeThresholdRate: difficulty.routeThresholdRate,
+        crowdBase: difficulty.crowdBase,
+        clinicalPivotEp: difficulty.clinicalPivotEp,
         detectionRate: difficulty.detectionRate,
         treatmentRate: difficulty.treatmentRate,
         immuneRate: difficulty.immuneRate,
@@ -2171,7 +2181,8 @@
       const nutrientFactor = clamp(1 - glucoseStress * Math.max(0.14, 1 - state.traits.starvationTolerance) - oxygenStress * Math.max(0.12, 1 - state.traits.oxygenFlex - state.traits.warburg * 0.6), 0.34, 1.5);
       const hallmarkMultiplier = 1 + state.bought.size * 0.036 + state.traits.telomerase * 0.05 + state.traits.contactEscape * 0.075;
       const growth = (0.52 + state.traits.growth * 0.48 + state.traits.biomass * 0.22) * organ.niche * nutrientFactor * (1 + state.traits.angiogenesis * 0.12) * hallmarkMultiplier * state.rules.growthRate;
-      const crowdBrake = clamp(1 - organ.burden / (135 + state.traits.contactEscape * 95 + state.traits.angiogenesis * 42 + state.traits.telomerase * 24), 0.11, 1);
+      const crowdCapacity = state.rules.crowdBase + state.traits.contactEscape * 95 + state.traits.angiogenesis * 42 + state.traits.telomerase * 24;
+      const crowdBrake = clamp(1 - organ.burden / crowdCapacity, 0.11, 1);
       const immuneKill = organ.burden * organ.immuneHeat * 0.00145 * Math.max(0.1, 1 - state.traits.immuneEvasion * 0.38 - state.traits.antigenStealth * 0.34);
       const therapyKill = organ.burden * state.treatment * 0.00078 * Math.max(0.16, 1 - state.traits.apoptosisEscape * 0.3 - state.traits.stressTolerance * 0.22);
       const acidCost = organ.burden * Math.max(0, state.resources.lactate - 68) * 0.00052 * Math.max(0.14, 1 - state.traits.acidShield);
@@ -2336,12 +2347,15 @@
       if (state.detection >= 100) {
         state.clinicallyDetected = true;
         state.detection = 100;
-        log("Detection reached 100%: the tumour is clinically visible and response pressure begins.");
+        state.evolutionPoints += state.rules.clinicalPivotEp;
+        log(`Detection reached 100%: acute selection produced resistant subclones (+${state.rules.clinicalPivotEp} EP), and response pressure begins.`);
       }
       return;
     }
     state.detection = 100;
-    const responseGain = (0.85 + burden * 0.014 + visibleOrgans * 0.045 + bulkyOrgans * 0.09) * state.rules.treatmentRate;
+    const responseBase = 0.85 + burden * 0.014 + visibleOrgans * 0.045 + bulkyOrgans * 0.09;
+    const responseEvasion = Math.max(0.5, 1 - state.traits.antigenStealth * 0.08 - state.traits.immuneEvasion * 0.05);
+    const responseGain = responseBase * responseEvasion * state.rules.treatmentRate;
     state.treatment = clamp(state.treatment + responseGain, 0, 100);
     if (state.treatment >= 25 && !state.clinicalResponseLogged) {
       state.clinicalResponseLogged = true;
