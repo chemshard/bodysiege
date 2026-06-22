@@ -4,7 +4,7 @@
   const TICK_MS = 2200;
 
   const organDefs = [
-    { id: "colon", name: "Primary colon", system: "primary tissue", x: 0.5, y: 0.82, r: 0.052, weight: 1.1, niche: 1.08, oxygen: 0.76, immune: 0.52, difficulty: 0.2, seeded: true, burden: 3 },
+    { id: "colon", name: "Colon", system: "intestinal tissue", x: 0.5, y: 0.82, r: 0.052, weight: 1.1, niche: 1.08, oxygen: 0.76, immune: 0.52, difficulty: 0.2, seeded: true, burden: 3 },
     { id: "lymph", name: "Lymph nodes", system: "lymphatic", x: 0.38, y: 0.44, r: 0.04, weight: 0.72, niche: 0.88, oxygen: 0.72, immune: 0.86, difficulty: 0.42, seeded: false, burden: 0 },
     { id: "blood", name: "Bloodstream", system: "transport", x: 0.62, y: 0.44, r: 0.035, weight: 0.52, niche: 0.58, oxygen: 1, immune: 0.95, difficulty: 0.62, seeded: false, burden: 0 },
     { id: "lung", name: "Lung", system: "oxygen exchange", x: 0.5, y: 0.31, r: 0.056, weight: 1.1, niche: 0.96, oxygen: 1, immune: 0.74, difficulty: 0.48, seeded: false, burden: 0 },
@@ -23,8 +23,10 @@
     { from: "lymph", to: "blood", mode: "lymph", min: 15, label: "lymphovenous return" },
     { from: "blood", to: "lung", mode: "blood", min: 5, label: "first capillary bed" },
     { from: "blood", to: "liver", mode: "blood", min: 7, label: "portal filtering" },
+    { from: "blood", to: "colon", mode: "blood", min: 10, label: "mesenteric vascular seeding" },
     { from: "blood", to: "kidney", mode: "blood", min: 12, label: "renal filtration" },
     { from: "blood", to: "bone", mode: "blood", min: 14, label: "marrow niche" },
+    { from: "lymph", to: "colon", mode: "lymph", min: 14, label: "retrograde lymphatic spread" },
     { from: "lung", to: "blood", mode: "blood", min: 14, label: "pulmonary venous escape" },
     { from: "liver", to: "blood", mode: "blood", min: 14, label: "hepatic venous invasion" },
     { from: "kidney", to: "blood", mode: "blood", min: 14, label: "renal venous invasion" },
@@ -32,6 +34,7 @@
     { from: "lung", to: "brain", mode: "barrier", min: 20, label: "blood-brain barrier" },
     { from: "brain", to: "blood", mode: "barrier", min: 30, label: "blood-brain barrier escape" },
     { from: "peritoneum", to: "lymph", mode: "lymph", min: 16, label: "peritoneal lymphatics" },
+    { from: "peritoneum", to: "colon", mode: "direct", min: 12, label: "serosal implantation" },
     { from: "liver", to: "peritoneum", mode: "direct", min: 18, label: "surface shedding" }
   ];
 
